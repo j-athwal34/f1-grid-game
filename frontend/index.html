@@ -78,6 +78,11 @@
 
     <script>
         // JavaScript goes here
+
+        // const API_URL = "https://f1-grid-game-backend.onrender.com"; // is our backend running service
+        const API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://127.0.0.1:8000" : "https://f1-grid-game-backend.onrender.com";
+
+
         const startBtn = document.getElementById("startBtn");
         const submitBtn = document.getElementById("submitBtn");
         const restartBtn = document.getElementById("restartBtn");
@@ -96,7 +101,7 @@
 
             playerOrder = [];
             // using game session state saved in server, load/fetch the current level
-            const roundResponse = await fetch("http://127.0.0.1:8000/round?user_id=" + userId);
+            const roundResponse = await fetch(API_URL + "/round?user_id=" + userId);
             const roundData = await roundResponse.json(); // the output for level data (race, year, drivers, etc..)
             roundId = roundData.results_id;
             playerLevel = roundData.player_level;
@@ -135,7 +140,7 @@
         }
 
         async function startGame() {
-            const startResponse = await fetch("http://127.0.0.1:8000/start");
+            const startResponse = await fetch(API_URL + "/start");
             const startData = await startResponse.json();
             userId = startData.user_id
             console.log(startData);
@@ -175,7 +180,7 @@
             submitBtn.disabled = true; // exception handle for submit button control and potential api retry
             try {
             console.log(playerOrder)
-            const submitResponse = await fetch("http://127.0.0.1:8000/guess", {
+            const submitResponse = await fetch(API_URL + "/guess", {
                 method: "POST",
                 headers: {"Content-Type": "application/json" },
                 body: JSON.stringify({
