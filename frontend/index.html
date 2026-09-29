@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>F1 Grid Game</title>
+    <meta name="viewpoint" content="width=device-width, initial-scale=0.1">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;   /* stack children top-to-bottom */
+            align-items: center;      /* centre them horizontally */
+            font-family: sans-serif;
+            background: #15151e;      /* dark backdrop */
+            color: white;
+        }
+
+        #driverList {               /* not actually buttons, they are list elements with click listeners attached */
+            list-style: none;    /* remove the bullet points */
+            padding: 0;
+            width: 300px;
+        }
+        #driverList li {
+            padding: 14px 18px;          /* big tap target — mobile-friendly */
+            margin: 6px 0;
+            background: #2a2a3a;
+            border-radius: 8px;          /* rounded corners */
+            cursor: pointer;
+            transition: background 0.15s, transform 0.05s; /* smooth colour change */
+        }
+        #driverList li:hover {
+            background: #3a3a4a;         /* feedback on hover */
+        }
+        #driverList li.picked {             /* custom function attached via classList in the script */
+            background: #e10600;    /* F1 red when selected */
+            transform:scale(0.98);
+        }
+
+        button {
+            padding: 14px 18px;          /* big tap target — mobile-friendly */
+            background: #e10600;
+            font-size:1.1rem;
+            font-weight:bold;
+            color: white;
+            border: none;
+            border-radius: 8px;          /* rounded corners */
+            cursor: pointer;
+            transition: background 0.15s, transform 0.05s; /* smooth colour change */
+        }
+        #restartBtn { background: #555; }
+
+        button:hover {
+            background: #ff2b1f;
+        }
+        button:active {
+            transform: scale(0.97);
+        }
+
+        #won_loadNext{
+            margin: 20px 0;
+        }
+
+        #restartBtn{
+            margin-top: 16px;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>F1 Grid Game</h1>
+    <button id="startBtn">Start Game</button>
+
+    <div id="levelInfo"></div>
+    <div id="raceInfo"></div>
+    <ul id="driverList"></ul>
+    <div id="won_loadNext"></div>
+    <button id="submitBtn">Submit Guess</button>
+    <button id="restartBtn">Restart Game</button>
+
+
+    <script>
+        // JavaScript goes here
+        const startBtn = document.getElementById("startBtn");
+        const submitBtn = document.getElementById("submitBtn");
+        const restartBtn = document.getElementById("restartBtn");
+
+        document.getElementById("restartBtn").style.display = "none"; // hide the restart button
+        document.getElementById("submitBtn").style.display = "none"; // hide the submit button
+
+        let userId = null;
+        let roundId = null;
+        let playerLevel = null;
+        let playerOrder = [];
+        let driverCount = null;
+
+        async function loadRound() {
+            submitBtn.disabled = false; // if it was disabled previously, make sure it is working for this round
+
+            playerOrder = [];
+            // using game session state saved in server, load/fetch the current level
+            const roundResponse = await fetch("http://127.0.0.1:8000/round?user_id=" + userId);
+            const roundData = await roundResponse.json(); // the output for level data (race, year, drivers, etc..)
+            roundId = roundData.results_id;
+            playerLevel = roundData.player_level;
+            driverCount = roundData.drivers.length; // number of drivers in this round
+
+            document.getElementById("levelInfo").textContent = "Level: " + playerLevel;
+            document.getElementById("raceInfo").textContent = roundData.race_name + " (" + roundData.year + ")";
+            
+            // add drivers to the unordered list
+            const list = document.getElementById("driverList");
+            list.innerHTML = ""; // clear anything from a previous round
+
+            document.getElementById("submitBtn").style.display = "block"; // show the submit button
+            document.getElementById("won_loadNext").textContent = ""; // hide and empty the won/load next message
+
+            roundData.drivers.forEach(function(driver){
+                const li = document.createElement("li");
+                li.textContent = driver;
+
+                li.addEventListener("click", function(){
+                    if (playerOrder.includes(driver)) { // if you press a driver that is already in list
+                        if (driver == playerOrder[playerOrder.length - 1]) { // if that driver is the last one in the list
+                            playerOrder.pop(); // remove it
+                            li.textContent = driver; // restore to default
+                            li.classList.remove("picked") // for visual purposes - to pick
+                        }
+                    } else { // clicking a driver to rank it
+                        playerOrder.push(driver); // push driver to list (after pressed)
+                        li.textContent = playerOrder.length + ". " + driver; // show position
+                        li.classList.add("picked") // for visual purposes - to unpick/reset
+                    };
+                });
+
+                list.appendChild(li);
+            });
+        }
+
+        async function startGame() {
+            const startResponse = await fetch("http://127.0.0.1:8000/start");
+            const startData = await startResponse.json();
+            userId = startData.user_id
+            console.log(startData);
+        };
+        
+        // when the user presses click, initialise server side by creating a game session 
+        startBtn.addEventListener("click", async function(){
+            startBtn.disabled = true; // no second click - click once and wait for api to complete request
+            try {
+                await startGame();
+                await loadRound();
+            } finally { 
+                document.getElementById("startBtn").style.display = "none"; // hide the start game button
+                startBtn.disabled = false; // if api error, another click is allowed to pass through
+            }
+            
+            document.getElementById("restartBtn").style.display = "block"; // now show the restart game button once the game has started
+        
+            document.getElementById("submitBtn").style.display = "block"; // show the submit button
+
+        });
+
+        restartBtn.addEventListener("click", async function(){ // function for restarting the game again
+            restartBtn.disabled = true;
+            try {
+                await startGame();
+                await loadRound();
+            } finally {
+                restartBtn.disabled = false;
+            }
+        });
+
+        submitBtn.addEventListener("click", async function(){
+            if (playerOrder.length !== driverCount) {
+                return ; // invalid use of submit button
+            }
+            submitBtn.disabled = true; // exception handle for submit button control and potential api retry
+            try {
+            console.log(playerOrder)
+            const submitResponse = await fetch("http://127.0.0.1:8000/guess", {
+                method: "POST",
+                headers: {"Content-Type": "application/json" },
+                body: JSON.stringify({
+                    user_id: userId,
+                    round_id: roundId,
+                    guess: playerOrder
+                })
+            });
+            const result = await submitResponse.json();
+
+            if (result.pass) {
+                if (result.won) { // if the user got it right and they won!
+                    document.getElementById("won_loadNext").textContent = "You won! Completed every level!";
+                    document.getElementById("raceInfo").textContent = "";
+                    document.getElementById("driverList").innerHTML = "";
+                    submitBtn.style.display = "none";
+                    restartBtn.style.display = "block";
+                    return;
+                }
+
+                // do something that loads the next round! + add a message
+                document.getElementById("won_loadNext").textContent = "Correct! Loading next round...";
+                await new Promise(r => setTimeout(r, 1500));   // pause ~0.9s so they see it
+                await loadRound();
+
+            } else { // if the user got it wrong, show the game over screen
+                document.getElementById("submitBtn").style.display = "none"; // hide the submit button
+                document.getElementById("levelInfo").textContent = "You reached Level " + playerLevel + "!";
+                document.getElementById("raceInfo").textContent = "Game Over!";
+                document.getElementById("driverList").innerHTML = "";
+            }
+            console.log(result)
+            } finally {
+                submitBtn.disabled = false; // user can press submit to try again
+            }
+        });
+
+    </script>
+</body>
+</html>
