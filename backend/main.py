@@ -34,8 +34,8 @@ def start():
     return {"user_id": user_id}
 
 @app.get("/round")
-def get_round(user_id: str): # taking in argument (in URL)
-    race_name, year, drivers, results = generate(player_level.get(user_id))
+def get_round(user_id: str, featured: bool): # taking in argument (in URL)
+    race_name, year, drivers, results = generate(player_level.get(user_id), featured) # change the featured race here
     round_id = str(uuid.uuid4()) # generate a roundID
     rounds[round_id] = results
     return {"race_name": race_name, 

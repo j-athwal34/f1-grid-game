@@ -1,16 +1,47 @@
-import fastf1 as f1
-f1.set_log_level('CRITICAL') # ignores all warnings from fastf1 unless CRITICAL
+#import fastf1 as f1
+#f1.set_log_level('CRITICAL') # ignores all warnings from fastf1 unless CRITICAL
 import random
 import os
 import json
 import time
+from datetime import date
+
+FEATURED_VENUES = [
+    "British Grand Prix",
+    "Spanish Grand Prix",
+    "Hungarian Grand Prix",
+    "Italian Grand Prix",
+    "Monaco Grand Prix",
+    "Australian Grand Prix",
+    "Belgian Grand Prix",
+    "Japanese Grand Prix",
+    "Canadian Grand Prix",
+    "United States Grand Prix",
+    "Bahrain Grand Prix",
+    "Brazilian Grand Prix",
+    "Chinese Grand Prix",
+    "Malaysian Grand Prix",
+    "Austrian Grand Prix",
+    "German Grand Prix",
+    "Abu Dhabi Grand Prix",
+    "Singapore Grand Prix",
+    "European Grand Prix",
+    "French Grand Prix",
+    "Mexican Grand Prix",
+]
 
 with open('f1_race_results_2000_2026.json') as f:
     RACES = json.load(f)
 
-def generate(level): # future scope changes races/years active
+def generate(level, featured): # future scope changes races/years active
     level += 1 # level 1 has 2 drivers
-    race = random.choice(RACES)
+
+    if not featured: # if we not using featured
+        race = random.choice(RACES)
+    else:
+        featuredRace = featured_race()
+        matching = [r for r in RACES if r["race"] == featuredRace]  # all races at that venue
+        race = random.choice(matching) 
     order = race['order']
 
     num = min(level, len(order))                # the anti-hang guard, still needed
@@ -19,9 +50,15 @@ def generate(level): # future scope changes races/years active
 
     random_drivers = finishing_order.copy()
     random.shuffle(random_drivers)
-    
 
     return race['race'], race['year'], random_drivers, finishing_order
+
+
+def featured_race():
+    day = date.today().toordinal() # gets the day number
+    featured = FEATURED_VENUES[day % len(FEATURED_VENUES)] # get the race
+    return featured
+
 
 def game_logic():
     alive = True

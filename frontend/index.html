@@ -37,6 +37,7 @@
 
         button {
             padding: 14px 18px;          /* big tap target — mobile-friendly */
+            margin: 6px 0;
             background: #e10600;
             font-size:1.1rem;
             font-weight:bold;
@@ -63,6 +64,10 @@
             margin-top: 16px;
         }
 
+        #mainMenuBtn{
+            margin-top: 16px;
+        }
+
         #gameFooter {
             width: 90%;
             max-width: 500px;
@@ -85,7 +90,8 @@
 </head>
 <body>
     <h1>F1 Grid Game</h1>
-    <button id="startBtn">Start Game</button>
+    <button id="startBtn">Start Original Game</button>
+    <button id="featuredStartBtn">Start Featured Race Game</button>
 
     <div id="levelInfo"></div>
     <div id="raceInfo"></div>
@@ -93,6 +99,7 @@
     <div id="won_loadNext"></div>
     <button id="submitBtn">Submit Guess</button>
     <button id="restartBtn">Restart Game</button>
+    <button id="mainMenuBtn">Main Menu</button>
 
 
     <script>
@@ -107,22 +114,37 @@
         const startBtn = document.getElementById("startBtn");
         const submitBtn = document.getElementById("submitBtn");
         const restartBtn = document.getElementById("restartBtn");
+        const featuredStartBtn = document.getElementById("featuredStartBtn");
+        const mainMenuBtn = document.getElementById("mainMenuBtn");
 
         document.getElementById("restartBtn").style.display = "none"; // hide the restart button
         document.getElementById("submitBtn").style.display = "none"; // hide the submit button
+        document.getElementById("mainMenuBtn").style.display = "none"; // hide the main menu button
+
+        document.getElementById("levelInfo").style.display = "none";
+        document.getElementById("won_loadNext").style.display = "none";
+        document.getElementById("raceInfo").style.display = "none";
+        document.getElementById("driverList").style.display = "none";
+
 
         let userId = null;
         let roundId = null;
         let playerLevel = null;
         let playerOrder = [];
         let driverCount = null;
+        let featured = null; // JS treats this as a global variable (different to python)
 
         async function loadRound() {
             submitBtn.disabled = false; // if it was disabled previously, make sure it is working for this round
+            mainMenuBtn.disabled = false;
+
+            document.getElementById("levelInfo").style.display = "block";
+            document.getElementById("raceInfo").style.display = "block";
+            document.getElementById("driverList").style.display = "block";
 
             playerOrder = [];
             // using game session state saved in server, load/fetch the current level
-            const roundResponse = await fetch(API_URL + "/round?user_id=" + userId);
+            const roundResponse = await fetch(API_URL + "/round?user_id=" + userId + "&featured=" + featured);
             const roundData = await roundResponse.json(); // the output for level data (race, year, drivers, etc..)
             roundId = roundData.results_id;
             playerLevel = roundData.player_level;
@@ -136,6 +158,7 @@
             list.innerHTML = ""; // clear anything from a previous round
 
             document.getElementById("submitBtn").style.display = "block"; // show the submit button
+            document.getElementById("won_loadNext").style.display = "none";
             document.getElementById("won_loadNext").textContent = ""; // hide and empty the won/load next message
 
             roundData.drivers.forEach(function(driver){
@@ -172,6 +195,7 @@
             startBtn.disabled = true; // no second click - click once and wait for api to complete request
             try {
                 await startGame();
+                featured = false;
                 await loadRound();
             } finally { 
                 document.getElementById("startBtn").style.display = "none"; // hide the start game button
@@ -179,10 +203,30 @@
             }
             
             document.getElementById("restartBtn").style.display = "block"; // now show the restart game button once the game has started
-        
+            document.getElementById("featuredStartBtn").style.display = "none";
             document.getElementById("submitBtn").style.display = "block"; // show the submit button
+            document.getElementById("mainMenuBtn").style.display = "block";
 
         });
+
+        featuredStartBtn.addEventListener("click", async function(){
+            featuredStartBtn.disabled = true;
+            try {
+                await startGame();
+                featured = true;
+                await loadRound(); // enter in "default" or "featured" to send back through api
+            } finally { 
+                document.getElementById("featuredStartBtn").style.display = "none"; // hide the start game button
+                featuredStartBtn.disabled = false; // if api error, another click is allowed to pass through
+            }
+            
+            document.getElementById("restartBtn").style.display = "block"; // now show the restart game button once the game has started
+            document.getElementById("startBtn").style.display = "none";
+            document.getElementById("submitBtn").style.display = "block"; // show the submit button
+            document.getElementById("mainMenuBtn").style.display = "block";
+
+        });
+        
 
         restartBtn.addEventListener("click", async function(){ // function for restarting the game again
             restartBtn.disabled = true;
@@ -193,6 +237,25 @@
                 restartBtn.disabled = false;
             }
         });
+
+        mainMenuBtn.addEventListener("click", async function(){
+            mainMenuBtn.disabled = true;
+            
+            startBtn.style.display = "block";
+            featuredStartBtn.style.display = "block";
+            playerOrder = [];
+            document.getElementById("restartBtn").style.display = "none"; // hide the restart button
+            document.getElementById("submitBtn").style.display = "none"; // hide the submit button
+            document.getElementById("mainMenuBtn").style.display = "none"; // hide the main menu button
+            document.getElementById("levelInfo").style.display = "none";
+            document.getElementById("won_loadNext").style.display = "none";
+            document.getElementById("raceInfo").style.display = "none";
+            document.getElementById("driverList").style.display = "none";
+
+            featured = null;
+        });
+
+
 
         submitBtn.addEventListener("click", async function(){
             if (playerOrder.length !== driverCount) {
@@ -217,14 +280,18 @@
                     document.getElementById("won_loadNext").textContent = "You won! Completed every level!";
                     document.getElementById("raceInfo").textContent = "";
                     document.getElementById("driverList").innerHTML = "";
+                    document.getElementById("raceInfo").style.display = "none";
+                    document.getElementById("driverList").style.display = "none";
+                    
                     submitBtn.style.display = "none";
                     restartBtn.style.display = "block";
                     return;
                 }
 
                 // do something that loads the next round! + add a message
+                document.getElementById("won_loadNext").style.display = "block";
                 document.getElementById("won_loadNext").textContent = "Correct! Loading next round...";
-                await new Promise(r => setTimeout(r, 1500));   // pause ~0.9s so they see it
+                await new Promise(r => setTimeout(r, 1000));   // pause ~0.9s so they see it
                 await loadRound();
 
             } else { // if the user got it wrong, show the game over screen
@@ -232,6 +299,12 @@
                 document.getElementById("levelInfo").textContent = "You reached Level " + playerLevel + "!";
                 document.getElementById("raceInfo").textContent = "Game Over!";
                 document.getElementById("driverList").innerHTML = "";
+                document.getElementById("driverList").style.display = "none";
+                document.getElementById("mainMenuBtn").style.display = "block";
+                document.getElementById("won_loadNext").style.display = "none";
+                
+
+
             }
             console.log(result)
             } finally {
@@ -244,6 +317,9 @@
     <footer id="gameFooter" >
         <h3> About </h3>
         <p> Guess the finishing order of F1 Drivers from real races. See how many levels you can reach, with each level getting increasingly difficult.</p>
+
+        <h3> Featured Race </h3>
+        <p> Play the featured race mode, where players can challenge a single race venue across random seasons. Track refreshes daily, come back tomorrow for a new challenge!</p>
 
         <h3> How to Play</h3>
         <p> Each level shows drivers from a random Grand Prix. Tap them into finishing order, tap again to undo your last pick. Submit a correct guess to advance to the next level. Get one wrong and you'll have to restart. Reach <strong> level 10 </strong> to win!</p>
