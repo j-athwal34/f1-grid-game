@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>F1 Grid Game</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
     <style>
         body {
             display: flex;
@@ -16,8 +16,8 @@
         #driverList {               /* not actually buttons, they are list elements with click listeners attached */
             list-style: none;    /* remove the bullet points */
             padding: 0;
-            width: 90%;
-            max-width: 400px;
+            width: 90%;             /* itll be 90% of the screen */
+            max-width: 400px;         /* but the max is 400px, so mobile friendly and not massive on a desktop */
         }
         #driverList li {
             padding: 14px 18px;          /* big tap target — mobile-friendly */
@@ -63,6 +63,24 @@
             margin-top: 16px;
         }
 
+        #gameFooter {
+            width: 90%;
+            max-width: 500px;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #333;   /* visual separator from the game */
+            color: #aaa;                   /* muted — it's secondary info */
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        #gameFooter h3 {
+            color: #fff;                   /* headings a touch brighter */
+            margin-bottom: 4px;
+        }
+        .footer-note {
+            color: #e1a600;                /* amber — draws the eye to the warning */
+        }
+
     </style>
 </head>
 <body>
@@ -81,7 +99,9 @@
         // JavaScript goes here
 
         // const API_URL = "https://f1-grid-game-backend.onrender.com"; // is our backend running service
-        const API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://127.0.0.1:8000" : "https://f1-grid-game-backend.onrender.com";
+        const API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+            ? "http://127.0.0.1:8000" 
+            : "https://f1-grid-game-backend.onrender.com";
 
 
         const startBtn = document.getElementById("startBtn");
@@ -220,5 +240,16 @@
         });
 
     </script>
+
+    <footer id="gameFooter" >
+        <h3> About </h3>
+        <p> Guess the finishing order of F1 Drivers from real races. See how many levels you can reach, with each level getting increasingly difficult.</p>
+
+        <h3> How to Play</h3>
+        <p> Each level shows drivers from a random Grand Prix. Tap them into finishing order, tap again to undo your last pick. Submit a correct guess to advance to the next level. Get one wrong and you'll have to restart. Reach <strong> level 10 </strong> to win!</p>
+
+        <p class="footer-note"> First load can take up to a minute after pressing start. Stay patient!</p>
+    </footer>
+
 </body>
 </html>
