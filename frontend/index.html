@@ -184,15 +184,19 @@
         }
 
         async function startGame() {
+            document.getElementById("won_loadNext").style.display = "block"
+            document.getElementById("won_loadNext").textContent = "⏳ Waking the server up… the first go can take up to a minute.";
             const startResponse = await fetch(API_URL + "/start");
             const startData = await startResponse.json();
             userId = startData.user_id
             console.log(startData);
+            document.getElementById("won_loadNext").style.display = "none";
         };
         
         // when the user presses click, initialise server side by creating a game session 
         startBtn.addEventListener("click", async function(){
             startBtn.disabled = true; // no second click - click once and wait for api to complete request
+            featuredStartBtn.disabled = true;
             try {
                 await startGame();
                 featured = false;
@@ -200,6 +204,7 @@
             } finally { 
                 document.getElementById("startBtn").style.display = "none"; // hide the start game button
                 startBtn.disabled = false; // if api error, another click is allowed to pass through
+                featuredStartBtn.disabled = false;
             }
             
             document.getElementById("restartBtn").style.display = "block"; // now show the restart game button once the game has started
@@ -211,6 +216,7 @@
 
         featuredStartBtn.addEventListener("click", async function(){
             featuredStartBtn.disabled = true;
+            startBtn.displayed = true;
             try {
                 await startGame();
                 featured = true;
@@ -218,6 +224,7 @@
             } finally { 
                 document.getElementById("featuredStartBtn").style.display = "none"; // hide the start game button
                 featuredStartBtn.disabled = false; // if api error, another click is allowed to pass through
+                startBtn.displayed = false;
             }
             
             document.getElementById("restartBtn").style.display = "block"; // now show the restart game button once the game has started
