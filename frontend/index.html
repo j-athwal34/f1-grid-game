@@ -86,6 +86,10 @@
             color: #e1a600;                /* amber — draws the eye to the warning */
         }
 
+        #games_played {
+            color: rgb(4, 238, 4);
+        }
+
     </style>
 </head>
 <body>
@@ -100,6 +104,22 @@
     <button id="submitBtn">Submit Guess</button>
     <button id="restartBtn">Restart Game</button>
     <button id="mainMenuBtn">Main Menu</button>
+
+    <footer id="gameFooter" >
+
+        <div id="games_played"></div>
+
+        <h3> About </h3>
+        <p> Guess the finishing order of F1 Drivers from real races. See how many levels you can reach, with each level getting increasingly difficult.</p>
+
+        <h3> Featured Race </h3>
+        <p> Play the featured race mode, where players can challenge a single race venue across random seasons. Track refreshes daily, come back tomorrow for a new challenge!</p>
+
+        <h3> How to Play</h3>
+        <p> Each level shows drivers from a random Grand Prix. Tap them into finishing order, tap again to undo your last pick. Submit a correct guess to advance to the next level. Get one wrong and you'll have to restart. Reach <strong> level 10 </strong> to win!</p>
+
+        <p class="footer-note"> First load can take up to a minute after pressing start. Stay patient!</p>
+    </footer>
 
 
     <script>
@@ -116,6 +136,7 @@
         const restartBtn = document.getElementById("restartBtn");
         const featuredStartBtn = document.getElementById("featuredStartBtn");
         const mainMenuBtn = document.getElementById("mainMenuBtn");
+        const total_games_played = document.getElementById("games_played");
 
         document.getElementById("restartBtn").style.display = "none"; // hide the restart button
         document.getElementById("submitBtn").style.display = "none"; // hide the submit button
@@ -126,6 +147,14 @@
         document.getElementById("raceInfo").style.display = "none";
         document.getElementById("driverList").style.display = "none";
 
+        async function globalGames(){
+            const getGamesResponse = await fetch(API_URL + "/stats");
+            const data = await getGamesResponse.json();
+            total_games_played.textContent = "Global games played: " + data.total_games;
+        };
+
+        globalGames();
+        
 
         let userId = null;
         let roundId = null;
@@ -135,6 +164,7 @@
         let featured = null; // JS treats this as a global variable (different to python)
 
         async function loadRound() {
+            globalGames();
             submitBtn.disabled = false; // if it was disabled previously, make sure it is working for this round
             mainMenuBtn.disabled = false;
 
@@ -321,18 +351,7 @@
 
     </script>
 
-    <footer id="gameFooter" >
-        <h3> About </h3>
-        <p> Guess the finishing order of F1 Drivers from real races. See how many levels you can reach, with each level getting increasingly difficult.</p>
-
-        <h3> Featured Race </h3>
-        <p> Play the featured race mode, where players can challenge a single race venue across random seasons. Track refreshes daily, come back tomorrow for a new challenge!</p>
-
-        <h3> How to Play</h3>
-        <p> Each level shows drivers from a random Grand Prix. Tap them into finishing order, tap again to undo your last pick. Submit a correct guess to advance to the next level. Get one wrong and you'll have to restart. Reach <strong> level 10 </strong> to win!</p>
-
-        <p class="footer-note"> First load can take up to a minute after pressing start. Stay patient!</p>
-    </footer>
+    
 
 </body>
 </html>

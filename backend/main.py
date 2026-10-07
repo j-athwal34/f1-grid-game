@@ -6,6 +6,7 @@ import uuid
 from pydantic import BaseModel
 
 from f1_data_gen import generate
+from db_functions.db import increment_games, get_total_games
 
 class Guess(BaseModel): # pydantic model for data coming towards the server
     user_id: str
@@ -29,9 +30,15 @@ winning_level = 10 # The level needed to win the game
 @app.get("/start") # use GET for when the client fetches data
 def start():
     user_id = str(uuid.uuid4())
+    increment_games()
     level = 1
     player_level[user_id] = level
     return {"user_id": user_id}
+
+@app.get("/stats")
+def get_stats():
+    total_games = get_total_games()
+    return {"total_games": total_games} # returns total games played
 
 @app.get("/round")
 def get_round(user_id: str, featured: bool): # taking in argument (in URL)
@@ -44,7 +51,7 @@ def get_round(user_id: str, featured: bool): # taking in argument (in URL)
             "results_id": round_id,
             "player_level": player_level[user_id]} # returning data back to be displayed/stored
 
-@app.post("/guess") # use POST when updating server side
+@app.post("/guess") # use POST when updating server side (getting lots of data from the client)
 def post_guess(data: Guess): # building a BODY to enter in data -> List is big, structed so cannot pass through as too complex
 
     if data.round_id not in rounds: # stores round_id as a key in rounds. The value is results which is checked later! smart implementation
